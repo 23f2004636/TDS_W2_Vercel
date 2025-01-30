@@ -1,33 +1,39 @@
-# api/index.py
-from fastapi import FastAPI, Query
-from fastapi.middleware.cors import CORSMiddleware
-from typing import List, Optional
 import json
+from http.server import BaseHTTPRequestHandler
+import urllib.parse
 
-app = FastAPI()
+# Load student data from the JSON file
+def load_data():
+    with open('q-vercel-python.json', 'r') as file:
+        data = json.load(file)
+    return data
 
-# Enable CORS
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+# Handler class to process incoming requests
+class handler(BaseHTTPRequestHandler):
+    def do_GET(self):
+        # Parse the query parameters
+        query = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query)
 
-# Read the JSON file
-with open('q-vercel-python.json') as f:
-    students = json.load(f)
-    # Convert list to dictionary for faster lookups
-    marks_dict = {student['name']: student['marks'] for student in students}
+        # Get 'name' parameters from the query string
+        names = query.get('name', [])
 
-@app.get("/api")
-async def get_marks(name: Optional[List[str]] = Query(None)):
-    if not name:
-        return {"marks": []}
-    
-    marks = [marks_dict.get(student_name, 0) for student_name in name]
-    return {"marks": marks}
+        # Load data from the JSON file
+        data = load_data()
 
-# For Vercel serverless deployment
-handler = app
+        # Prepare the result dictionary
+        result = {"marks": []}
+        for name in names:
+            # Find the marks for each name
+            for entry in data:
+                if entry["name"] == name:
+                    result["marks"].append(entry["marks"])
+
+        # Send the response header
+        self.send_response(200)
+        self.send_header('Content-type', 'application/json')
+        self.send_header('Access-Control-Allow-Origin', '*')  # Enable CORS for any origin
+        self.end_headers()
+
+        # Send the JSON response
+        self.wfile.write(json.dumps(result).encode('utf-8'))
+
