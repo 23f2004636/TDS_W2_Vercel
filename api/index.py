@@ -8,6 +8,14 @@ json_file_path = os.path.join(os.getcwd(), "q-vercel-python.json")
 
 class handler(BaseHTTPRequestHandler):
     def do_GET(self):
+        # Set CORS headers to allow requests from any origin
+        self.send_response(200)
+        self.send_header('Content-type', 'application/json')
+        self.send_header('Access-Control-Allow-Origin', '*')  # Allow all origins
+        self.send_header('Access-Control-Allow-Methods', 'GET')  # Allow only GET requests
+        self.send_header('Access-Control-Allow-Headers', 'Content-Type')  # Allow specific headers
+        self.end_headers()
+
         # Parse query parameters (extract "name" values)
         query_components = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query)
         names = query_components.get('name', [])
@@ -32,9 +40,6 @@ class handler(BaseHTTPRequestHandler):
             if not found:
                 marks.append("Not found")
 
-        # Send response
-        self.send_response(200)
-        self.send_header('Content-type', 'application/json')
-        self.end_headers()
+        # Send the JSON response
         self.wfile.write(json.dumps({"marks": marks}).encode('utf-8'))
         return
