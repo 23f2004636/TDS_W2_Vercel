@@ -1,25 +1,26 @@
 # api/index.py
-from http.cors import CORS
-import json
-import os
-from typing import List, Optional
 from fastapi import FastAPI, Query
 from fastapi.middleware.cors import CORSMiddleware
+from typing import List, Optional
+import sys
+import os
+
+# Import the data
+from q_vercel_python import student_data
+
+# Convert list to dictionary for faster lookups
+marks_dict = {student['name']: student['marks'] for student in student_data}
 
 app = FastAPI()
 
 # Enable CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Allows all origins
+    allow_origins=["*"],
     allow_credentials=True,
-    allow_methods=["*"],  # Allows all methods
-    allow_headers=["*"],  # Allows all headers
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
-
-# Load the marks data
-with open('q-vercel-python.json', 'r') as f:
-    marks_data = json.load(f)
 
 @app.get("/api")
 async def get_marks(name: Optional[List[str]] = Query(None)):
@@ -27,7 +28,7 @@ async def get_marks(name: Optional[List[str]] = Query(None)):
         return {"marks": []}
     
     # Get marks for each name in the query
-    marks = [marks_data.get(student_name, 0) for student_name in name]
+    marks = [marks_dict.get(student_name, 0) for student_name in name]
     return {"marks": marks}
 
 # For Vercel serverless deployment
